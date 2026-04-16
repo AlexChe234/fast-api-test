@@ -1,6 +1,6 @@
 # FastAPI Test Backend
 
-Простое тестовое приложение на FastAPI, возвращающее текущую дату и время.
+Простое тестовое приложение на FastAPI с endpoints для даты и калькулятора.
 
 ## Установка
 
@@ -35,6 +35,7 @@ docker run -p 8000:8000 fastapi-app
 | GET | `/` | Приветственное сообщение |
 | GET | `/date` | Возвращает текущую дату (YYYY-MM-DD) |
 | GET | `/date/{date_format}` | Возвращает текущую дату в указанном формате |
+| GET | `/multiply/{a}/{b}` | Умножает два числа |
 
 ## Примеры ответов
 
@@ -79,6 +80,34 @@ docker run -p 8000:8000 fastapi-app
 - `%d %B %Y` → 15 January 2025
 - `%A, %d %B %Y` → Wednesday, 15 January 2025
 - `%d/%m/%y` → 15/01/25
+
+### GET /multiply/{a}/{b}
+
+Примеры запросов и ответов:
+
+**Запрос:** `/multiply/2/3`
+```json
+{
+  "result": 6.0,
+  "operation": "multiply",
+  "operands": {
+    "a": 2.0,
+    "b": 3.0
+  }
+}
+```
+
+**Запрос:** `/multiply/1.5/4`
+```json
+{
+  "result": 6.0,
+  "operation": "multiply",
+  "operands": {
+    "a": 1.5,
+    "b": 4.0
+  }
+}
+```
 
 ## Документация
 
