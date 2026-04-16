@@ -120,27 +120,27 @@ docker-compose up -d
 
 ```
 1. Checkout → Скачивание кода
-2. Setup Docker Buildx → Настройка сборки
-3. Login to Container Registry → Авторизация в GHCR
-4. Extract metadata → Извлечение метаданных
+2. Convert to lowercase → Преобразование имени репозитория в нижний регистр
+3. Setup Docker Buildx → Настройка сборки
+4. Login to Container Registry → Авторизация в GHCR
 5. Build and push → Сборка и пуш образа в GHCR
-6. Deploy (if not PR) → Деплой на сервер
+6. Deploy (if not PR) → Деплой на сервер через SSH
 ```
 
 ### Реестр образов
 
 - Registry: `ghcr.io`
-- Image name: `{owner}/{repo}`
-- Теги: branch, pr, semver, sha
+- Image name: `{owner}/{repo}` (в нижнем регистре)
+- Теги: `latest`, `{sha}`
 
 ### Примеры тегов образа
 
 | Событие | Тег |
 |---------|-----|
-| Push в main | `main-{sha}` |
-| PR | `pr-{number}` |
-| Тег v1.0.0 | `1.0.0` |
-| Пушит SHA | `{sha}` |
+| Push в main | `{sha}` + `latest` |
+| Тег v1.0.0 | `{sha}` + `latest` |
+
+> **Важно:** Имя репозитория автоматически преобразуется в нижний регистр (например, `AlexChe234/fast-api-test` → `alexche234/fast-api-test`).
 
 ---
 
@@ -163,7 +163,8 @@ docker-compose up -d
 | `SSH_PORT` | Порт SSH (обычно 22) |
 | `SSH_USERNAME` | Имя пользователя для SSH |
 | `SSH_PRIVATE_KEY` | Приватный SSH ключ |
-| `GHCR_TOKEN` | Token для доступа к GHCR (GITHUB_TOKEN) |
+
+> **Примечание:** `GHCR_TOKEN` больше не требуется — workflow использует встроенный `${{ secrets.GITHUB_TOKEN }}`.
 
 ### Настройка SSH ключа
 
@@ -180,10 +181,11 @@ docker-compose up -d
 
 ```bash
 # Логин в registry
-echo "$GHCR_TOKEN" | docker login ghcr.io -u $USERNAME --password-stdin
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u $USERNAME --password-stdin
 
-# Определяем образ
-IMAGE="ghcr.io/username/repo:commit-sha"
+# Определяем образ (имя в нижнем регистре!)
+IMAGE_NAME_LOWER=$(echo "username/repo" | tr '[:upper:]' '[:lower:]')
+IMAGE="ghcr.io/$IMAGE_NAME_LOWER:commit-sha"
 
 # Останавливаем старый контейнер
 docker stop my-app 2>/dev/null || true
@@ -192,18 +194,18 @@ docker rm my-app 2>/dev/null || true
 # Запускаем новый
 docker run -d --name my-app \
   --restart unless-stopped \
-  -p 80:8000 \
+  -p 8000:8000 \
   "$IMAGE"
 ```
 
 ### Структура деплоя на сервере
 
+Контейнер запускается напрямую через Docker:
+
 ```
-/home/user/
-└── docker/
-    ├── docker-compose.yml
-    └── app/
-        └── (данные приложения)
+Контейнер: my-app
+Порт: 8000:8000
+Restart policy: unless-stopped
 ```
 
 ### Мониторинг
@@ -217,6 +219,9 @@ docker ps
 
 # Проверка использования ресурсов
 docker stats my-app
+
+# Проверка доступности приложения
+curl http://localhost:8000/
 ```
 
 ---
@@ -256,8 +261,16 @@ docker inspect my-app
 ### Ошибка авторизации в GHCR
 
 Убедитесь, что:
-1. Token имеет права `packages: write`
-2. Репозиторий публичный или token имеет доступ к приватным пакетам
+1. Репозиторий имеет права `packages: write` в настройках workflow
+2. Репозиторий публичный или токен имеет доступ к приватным пакетам
+
+### Ошибка "invalid reference format: repository name must be lowercase"
+
+Имя репозитория должно быть в нижнем регистре. Workflow автоматически преобразует имя, но при ручном деплое используйте:
+
+```bash
+IMAGE_NAME_LOWER=$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]')
+```
 
 ### Проблемы с портом
 
