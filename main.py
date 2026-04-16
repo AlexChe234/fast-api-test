@@ -31,3 +31,14 @@ def get_date_with_format(date_format: str):
         return {"error": f"Invalid date format: {str(e)}", "example": "Use formats like %Y-%m-%d, %d.%m.%Y"}
 
 
+@app.get("/multiply/{a}/{b}")
+def multiply(a: float, b: float):
+    """Умножает два числа.
+
+    Примеры:
+    - /multiply/2/3 → 6.0
+    - /multiply/1.5/4 → 6.0
+    """
+    return {"result": a * b, "operation": "multiply", "operands": {"a": a, "b": b}}
+
+
